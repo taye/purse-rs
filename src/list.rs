@@ -2,23 +2,23 @@ use std::iter::{Iterator, FromIterator};
 use std::sync::Arc;
 use std::fmt;
 
-type Link = Arc<Node>;
+type Link<T> = Arc<Node<T>>;
 
 #[derive(Clone, Debug)]
 
-struct Node {
-    data: i32,
-    next: List,
+struct Node<T: Clone> {
+    data: T,
+    next: List<T>,
 }
 
 #[derive(Clone, Debug)]
-pub struct List {
-    head: Option<Link>,
-    tail: Option<Link>,
+pub struct List<T: Clone> {
+    head: Option<Link<T>>,
+    tail: Option<Link<T>>,
     size: usize,
 }
 
-impl List {
+impl<T: Clone> List<T> {
     /// Creates an empty list.
     ///
     /// #Examples
@@ -26,11 +26,11 @@ impl List {
     /// ```
     /// use immutable::List;
     ///
-    /// let list = List::empty();
+    /// let list: List<i32> = List::empty();
     ///
     /// assert_eq!(list.len(), 0);
     /// ```
-    pub fn empty() -> List {
+    pub fn empty() -> Self {
         List {
             head: None,
             tail: None,
@@ -45,14 +45,16 @@ impl List {
     /// ```
     /// use immutable::List;
     ///
-    /// assert_eq!(List::empty().prepend(9).to_string(), "[9]");
+    /// let empty: List<i32> = List::empty();
+    ///
+    /// assert_eq!(empty.prepend(9).to_string(), "[9]");
     ///
     /// let list = List::create(1, List::create(2, List::empty()));
     /// let prepended = list.prepend(0);
     ///
     /// assert_eq!(prepended.to_string(), "[0, 1, 2]");
     /// ```
-    pub fn prepend(&self, data: i32) -> List {
+    pub fn prepend(&self, data: T) -> Self {
         let node = Node {
             data: data,
             next: List {
@@ -82,7 +84,7 @@ impl List {
     ///
     /// assert_eq!(list.to_string(), "[1, 2]");
     /// ```
-    pub fn create(data: i32, rest: List) -> List {
+    pub fn create(data: T, rest: Self) -> Self {
         let tail = rest.tail.clone();
         let size = 1 + rest.size;
         let head = Some(Arc::new(Node {
@@ -111,9 +113,12 @@ impl List {
     /// let concatted = list1.concat(&list2);
     ///
     /// assert_eq!(concatted.to_string(), "[1, 2, 3, 4]");
-    /// assert_eq!(List::empty().concat(&List::empty()).to_string(), "[]");
+    ///
+    /// let empty: List<()> = List::empty();
+    ///
+    /// assert_eq!(empty.concat(&empty).len(), 0);
     /// ```
-    pub fn concat(&self, right: &Self) -> List {
+    pub fn concat(&self, right: &Self) -> Self {
         match self.head {
             Some(ref link) => link.concat_list(link, &right),
             None => right.clone(),
@@ -128,7 +133,7 @@ impl List {
     /// use immutable::List;
     ///
     /// let list1 = List::create(1, List::create(2, List::empty()));
-    /// let list2 = List::empty();
+    /// let list2 = List::<i32>::empty();
     ///
     /// assert_eq!(list1.len(), 2);
     /// assert_eq!(list2.len(), 0);
@@ -144,7 +149,7 @@ impl List {
 /// use immutable::List;
 /// use std::iter::FromIterator;
 ///
-/// let from_range: List = (1..4).collect();
+/// let from_range: List<i32> = (1..4).collect();
 ///
 /// assert_eq!(from_range.to_string(), "[1, 2, 3]");
 ///
@@ -152,8 +157,8 @@ impl List {
 ///
 /// assert_eq!(from_vec.to_string(), "[4, 5, 6]");
 /// ```
-impl FromIterator<i32> for List {
-    fn from_iter<I: IntoIterator<Item = i32>>(iter: I) -> Self {
+impl<T: Clone> FromIterator<T> for List<T> {
+    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
         let mut iter = iter.into_iter();
 
         match iter.next() {
@@ -163,7 +168,7 @@ impl FromIterator<i32> for List {
     }
 }
 
-impl fmt::Display for List {
+impl<T: Clone + fmt::Display> fmt::Display for List<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.head {
             Some(ref link) => write!(f, "[{}]", link),
@@ -172,7 +177,7 @@ impl fmt::Display for List {
     }
 }
 
-impl fmt::Display for Node {
+impl<T: Clone + fmt::Display> fmt::Display for Node<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.next.head {
             Some(ref link) => write!(f, "{}, {}", self.data, link),
@@ -181,13 +186,11 @@ impl fmt::Display for Node {
     }
 }
 
-impl Node {
-    fn concat_list(&self, start: &Link, list: &List) -> List {
-        let result = match self.next.head {
-            Some(ref link) => List::create(self.data, link.concat_list(start, list)),
-            None => List::create(self.data, list.clone()),
-        };
-
-        result
+impl<T: Clone> Node<T> {
+    fn concat_list(&self, start: &Link<T>, list: &List<T>) -> List<T> {
+        match self.next.head {
+            Some(ref link) => List::create(self.data.clone(), link.concat_list(start, list)),
+            None => List::create(self.data.clone(), list.clone()),
+        }
     }
 }
