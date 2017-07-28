@@ -1,0 +1,6 @@
+[package]
+authors = ["Taye Adeyemi <dev@taye.me>"]
+name = "immutable"
+version = "0.0.0"
+
+[dependencies]
