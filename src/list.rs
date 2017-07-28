@@ -73,6 +73,26 @@ impl<T: Clone> List<T> {
         }
     }
 
+    /// Creates a list that starts with the original list and ends with the given element
+    ///
+    /// #Examples
+    ///
+    /// ```
+    /// use immutable::List;
+    ///
+    /// let empty: List<i32> = List::empty();
+    ///
+    /// assert_eq!(empty.append(9).to_string(), "[9]");
+    ///
+    /// let list = List::create(1, List::create(2, List::empty()));
+    /// let appended = list.append(3);
+    ///
+    /// assert_eq!(appended.to_string(), "[1, 2, 3]");
+    /// ```
+    pub fn append(&self, data: T) -> Self {
+        self.concat(&List::create(data, List::empty()))
+    }
+
     /// Creates a list from an item and the tail list.
     ///
     /// #Examples
