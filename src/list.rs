@@ -22,11 +22,14 @@ impl<T: Clone> List<T> {
     /// #Examples
     ///
     /// ```
+    /// # #[macro_use] extern crate immutable;
+    /// # fn main() {
     /// use immutable::List;
     ///
     /// let list: List<i32> = List::empty();
     ///
     /// assert_eq!(list.len(), 0);
+    /// # }
     /// ```
     pub fn empty() -> Self {
         List {
@@ -41,16 +44,19 @@ impl<T: Clone> List<T> {
     /// #Examples
     ///
     /// ```
+    /// # #[macro_use] extern crate immutable;
+    /// # fn main() {
     /// use immutable::List;
     ///
     /// let empty: List<i32> = List::empty();
     ///
-    /// assert_eq!(empty.prepend(9).to_string(), "[9]");
+    /// assert_eq!(empty.prepend(9), list![9]);
     ///
     /// let list = List::create(1, List::create(2, List::empty()));
     /// let prepended = list.prepend(0);
     ///
-    /// assert_eq!(prepended.to_string(), "[0, 1, 2]");
+    /// assert_eq!(prepended, list![0, 1, 2]);
+    /// # }
     /// ```
     pub fn prepend(&self, data: T) -> Self {
         let node = Node {
@@ -76,16 +82,19 @@ impl<T: Clone> List<T> {
     /// #Examples
     ///
     /// ```
+    /// # #[macro_use] extern crate immutable;
+    /// # fn main() {
     /// use immutable::List;
     ///
     /// let empty: List<i32> = List::empty();
     ///
-    /// assert_eq!(empty.append(9).to_string(), "[9]");
+    /// assert_eq!(empty.append(9), list![9]);
     ///
     /// let list = List::create(1, List::create(2, List::empty()));
     /// let appended = list.append(3);
     ///
-    /// assert_eq!(appended.to_string(), "[1, 2, 3]");
+    /// assert_eq!(appended, list![1, 2, 3]);
+    /// # }
     /// ```
     pub fn append(&self, data: T) -> Self {
         self.concat(&List::create(data, List::empty()))
@@ -96,11 +105,14 @@ impl<T: Clone> List<T> {
     /// #Examples
     ///
     /// ```
+    /// # #[macro_use] extern crate immutable;
+    /// # fn main() {
     /// use immutable::List;
     ///
     /// let list = List::create(1, List::create(2, List::empty()));
     ///
-    /// assert_eq!(list.to_string(), "[1, 2]");
+    /// assert_eq!(list, list![1, 2]);
+    /// # }
     /// ```
     pub fn create(data: T, rest: Self) -> Self {
         let tail = rest.tail.clone();
@@ -123,6 +135,8 @@ impl<T: Clone> List<T> {
     /// #Examples
     ///
     /// ```
+    /// # #[macro_use] extern crate immutable;
+    /// # fn main() {
     /// use immutable::List;
     ///
     /// let list1 = List::create(1, List::create(2, List::empty()));
@@ -130,11 +144,12 @@ impl<T: Clone> List<T> {
     ///
     /// let concatted = list1.concat(&list2);
     ///
-    /// assert_eq!(concatted.to_string(), "[1, 2, 3, 4]");
+    /// assert_eq!(concatted, list![1, 2, 3, 4]);
     ///
     /// let empty: List<()> = List::empty();
     ///
     /// assert_eq!(empty.concat(&empty).len(), 0);
+    /// # }
     /// ```
     pub fn concat(&self, right: &Self) -> Self {
         match self.head {
@@ -148,6 +163,8 @@ impl<T: Clone> List<T> {
     /// #Examples
     ///
     /// ```
+    /// # #[macro_use] extern crate immutable;
+    /// # fn main() {
     /// use immutable::List;
     ///
     /// let list1 = List::create(1, List::create(2, List::empty()));
@@ -155,6 +172,7 @@ impl<T: Clone> List<T> {
     ///
     /// assert_eq!(list1.len(), 2);
     /// assert_eq!(list2.len(), 0);
+    /// # }
     /// ```
     pub fn len(&self) -> usize {
         self.size
@@ -206,16 +224,19 @@ where
 /// #Examples
 ///
 /// ```
+/// # #[macro_use] extern crate immutable;
+/// # fn main() {
 /// use immutable::List;
 /// use std::iter::FromIterator;
 ///
 /// let from_range: List<i32> = (1..4).collect();
 ///
-/// assert_eq!(from_range.to_string(), "[1, 2, 3]");
+/// assert_eq!(from_range, list![1, 2, 3]);
 ///
 /// let from_vec = List::from_iter(vec![4, 5, 6]);
 ///
-/// assert_eq!(from_vec.to_string(), "[4, 5, 6]");
+/// assert_eq!(from_vec, list![4, 5, 6]);
+/// # }
 /// ```
 impl<T: Clone> FromIterator<T> for List<T> {
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
@@ -253,4 +274,30 @@ impl<T: Clone> Node<T> {
             None => List::create(self.data.clone(), list.clone()),
         }
     }
+}
+
+/// Macro for convenient list creation
+///
+/// # Example
+///
+/// ```
+/// # #[macro_use] extern crate immutable;
+/// # fn main() {
+/// use immutable::List;
+/// let list = list![1, 2, 3];
+///
+/// assert_eq!(list, List::create(1, List::create(2, List::create(3, List::empty()))));
+/// # }
+/// ```
+#[macro_export]
+macro_rules! list {
+    [] => { $crate::List::empty() };
+
+    [ $head:expr ] => {
+        $crate::List::create($head, $crate::List::empty())
+    };
+
+    [ $head:expr, $($rest:expr),* ] => {
+        $crate::List::create($head, list![$($rest),*])
+    };
 }
