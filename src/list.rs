@@ -2,14 +2,13 @@ use std::iter::{Iterator, FromIterator};
 use std::sync::Arc;
 use std::fmt;
 
-#[derive(Clone, Debug)]
-
+#[derive(Clone)]
 struct Node<T: Clone> {
     data: T,
     next: List<T>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct List<T: Clone> {
     head: Option<Arc<Node<T>>>,
     tail: Option<Arc<Node<T>>>,
@@ -249,20 +248,20 @@ impl<T: Clone> FromIterator<T> for List<T> {
     }
 }
 
-impl<T: Clone + fmt::Display> fmt::Display for List<T> {
+impl<T: Clone + fmt::Debug> fmt::Debug for List<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.head {
-            Some(ref link) => write!(f, "[{}]", link),
-            None => write!(f, "[]"),
+            Some(ref link) => write!(f, "[{:?}]", link),
+            None => write!(f, "[:"),
         }
     }
 }
 
-impl<T: Clone + fmt::Display> fmt::Display for Node<T> {
+impl<T: Clone + fmt::Debug> fmt::Debug for Node<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.next.head {
-            Some(ref link) => write!(f, "{}, {}", self.data, link),
-            None => write!(f, "{}", self.data),
+            Some(ref link) => write!(f, "{:?}, {:?}", self.data, link),
+            None => write!(f, "{:?}", self.data),
         }
     }
 }
