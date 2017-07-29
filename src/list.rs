@@ -2,8 +2,6 @@ use std::iter::{Iterator, FromIterator};
 use std::sync::Arc;
 use std::fmt;
 
-type Link<T> = Arc<Node<T>>;
-
 #[derive(Clone, Debug)]
 
 struct Node<T: Clone> {
@@ -13,8 +11,8 @@ struct Node<T: Clone> {
 
 #[derive(Clone, Debug)]
 pub struct List<T: Clone> {
-    head: Option<Link<T>>,
-    tail: Option<Link<T>>,
+    head: Option<Arc<Node<T>>>,
+    tail: Option<Arc<Node<T>>>,
     size: usize,
 }
 
@@ -207,7 +205,7 @@ impl<T: Clone + fmt::Display> fmt::Display for Node<T> {
 }
 
 impl<T: Clone> Node<T> {
-    fn concat_list(&self, start: &Link<T>, list: &List<T>) -> List<T> {
+    fn concat_list(&self, start: &Arc<Node<T>>, list: &List<T>) -> List<T> {
         match self.next.head {
             Some(ref link) => List::create(self.data.clone(), link.concat_list(start, list)),
             None => List::create(self.data.clone(), list.clone()),
