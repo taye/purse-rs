@@ -161,6 +161,48 @@ impl<T: Clone> List<T> {
     }
 }
 
+impl<T> PartialEq for List<T>
+where
+    T: Clone + PartialEq,
+{
+    /// #Examples
+    ///
+    /// ```
+    /// # #[macro_use] extern crate immutable;
+    /// # fn main() {
+    /// use immutable::List;
+    ///
+    /// let list1: List<i32> = List::create(1, List::create(2, List::empty()));
+    /// let list2: List<i32> = List::create(1, List::create(2, List::empty()));
+    ///
+    /// assert!(list1 == list2);
+    /// assert!(List::<i32>::empty() == List::<i32>::empty());
+    /// assert!(list1 != List::<i32>::empty());
+    /// # }
+    /// ```
+    fn eq(&self, other: &Self) -> bool {
+        // different lengths
+        if self.size != other.size {
+            return false;
+        };
+
+        match (&self.head, &other.head) {
+            // both empty
+            (&None, &None) => true,
+            (&Some(ref self_head), &Some(ref other_head)) => {
+                self_head.data == other_head.data && self_head.next == other_head.next
+            }
+            _ => false,
+        }
+    }
+}
+
+impl<T> Eq for List<T>
+where
+    T: Clone + PartialEq,
+{
+}
+
 /// #Examples
 ///
 /// ```
