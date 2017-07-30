@@ -20,9 +20,9 @@ impl<T: Clone> List<T> {
     /// #Examples
     ///
     /// ```
-    /// # #[macro_use] extern crate immutable;
+    /// # #[macro_use] extern crate purse;
     /// # fn main() {
-    /// use immutable::List;
+    /// use purse::List;
     ///
     /// let list: List<i32> = List::empty();
     ///
@@ -42,9 +42,9 @@ impl<T: Clone> List<T> {
     /// #Examples
     ///
     /// ```
-    /// # #[macro_use] extern crate immutable;
+    /// # #[macro_use] extern crate purse;
     /// # fn main() {
-    /// use immutable::List;
+    /// use purse::List;
     ///
     /// let empty: List<i32> = List::empty();
     ///
@@ -80,9 +80,9 @@ impl<T: Clone> List<T> {
     /// #Examples
     ///
     /// ```
-    /// # #[macro_use] extern crate immutable;
+    /// # #[macro_use] extern crate purse;
     /// # fn main() {
-    /// use immutable::List;
+    /// use purse::List;
     ///
     /// let empty: List<i32> = List::empty();
     ///
@@ -103,9 +103,9 @@ impl<T: Clone> List<T> {
     /// #Examples
     ///
     /// ```
-    /// # #[macro_use] extern crate immutable;
+    /// # #[macro_use] extern crate purse;
     /// # fn main() {
-    /// use immutable::List;
+    /// use purse::List;
     ///
     /// let list = List::create(1, List::create(2, List::empty()));
     ///
@@ -133,9 +133,9 @@ impl<T: Clone> List<T> {
     /// #Examples
     ///
     /// ```
-    /// # #[macro_use] extern crate immutable;
+    /// # #[macro_use] extern crate purse;
     /// # fn main() {
-    /// use immutable::List;
+    /// use purse::List;
     ///
     /// let list1 = List::create(1, List::create(2, List::empty()));
     /// let list2 = List::create(3, List::create(4, List::empty()));
@@ -161,9 +161,9 @@ impl<T: Clone> List<T> {
     /// #Examples
     ///
     /// ```
-    /// # #[macro_use] extern crate immutable;
+    /// # #[macro_use] extern crate purse;
     /// # fn main() {
-    /// use immutable::List;
+    /// use purse::List;
     ///
     /// let list1 = List::create(1, List::create(2, List::empty()));
     /// let list2 = List::<i32>::empty();
@@ -184,9 +184,9 @@ where
     /// #Examples
     ///
     /// ```
-    /// # #[macro_use] extern crate immutable;
+    /// # #[macro_use] extern crate purse;
     /// # fn main() {
-    /// use immutable::List;
+    /// use purse::List;
     ///
     /// let list1: List<i32> = List::create(1, List::create(2, List::empty()));
     /// let list2: List<i32> = List::create(1, List::create(2, List::empty()));
@@ -251,9 +251,9 @@ impl<T: Clone> Node<T> {
 /// # Example
 ///
 /// ```
-/// # #[macro_use] extern crate immutable;
+/// # #[macro_use] extern crate purse;
 /// # fn main() {
-/// use immutable::List;
+/// use purse::List;
 /// let list = list![1, 2, 3];
 ///
 /// assert_eq!(list, List::create(1, List::create(2, List::create(3, List::empty()))));

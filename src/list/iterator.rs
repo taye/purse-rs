@@ -26,9 +26,9 @@ impl<T: Clone> FromIterator<T> for List<T> {
     /// #Examples
     ///
     /// ```
-    /// # #[macro_use] extern crate immutable;
+    /// # #[macro_use] extern crate purse;
     /// # fn main() {
-    /// use immutable::List;
+    /// use purse::List;
     /// use std::iter::FromIterator;
     ///
     /// let from_range: List<i32> = (1..4).collect();
@@ -58,9 +58,9 @@ impl<T: Clone> IntoIterator for List<T> {
     /// #Examples
     ///
     /// ```
-    /// # #[macro_use] extern crate immutable;
+    /// # #[macro_use] extern crate purse;
     /// # fn main() {
-    /// use immutable::List;
+    /// use purse::List;
     /// use std::iter::IntoIterator;
     ///
     /// let list = list!["a", "b", "c"];
