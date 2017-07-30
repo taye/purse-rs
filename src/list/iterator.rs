@@ -23,6 +23,8 @@ impl<T: Clone> Iterator for IntoIter<T> {
 }
 
 impl<T: Clone> FromIterator<T> for List<T> {
+    /// Crates a List from an Iterator.
+    ///
     /// #Examples
     ///
     /// ```
@@ -54,7 +56,8 @@ impl<T: Clone> IntoIterator for List<T> {
     type Item = T;
     type IntoIter = IntoIter<T>;
 
-    /// Create an `Iterator` from a `List`
+    /// Creates an `Iterator` from a `List`.
+    ///
     /// #Examples
     ///
     /// ```
