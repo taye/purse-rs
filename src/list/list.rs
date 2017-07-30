@@ -8,6 +8,32 @@ pub(super) struct Node<T: Clone> {
     pub(super) next: List<T>,
 }
 
+/// A persistent singly linked list of elements.
+///
+/// Examples
+///
+/// ```
+/// use purse::List;
+///
+/// let letters = List::create("o", List::create("n", List::create("e", List::empty())));
+/// let word = letters.into_iter().fold(String::new(), |acc, x| acc + x);
+///
+/// assert_eq!(word, "one");
+/// ```
+///
+/// ```
+/// #[macro_use] extern crate purse;
+/// fn main() {
+///     use purse::List;
+///     use std::iter::FromIterator;
+///
+///     let list1 = purse_list![0, 1];
+///     let list2: List<List<i32>> = std::iter::repeat(list1.clone()).take(2).collect();
+///
+///     assert_eq!(list2, purse_list![purse_list![0, 1], purse_list![0, 1]]);
+///     assert_eq!(list2[1], list1);
+/// }
+/// ```
 #[derive(Clone)]
 pub struct List<T: Clone> {
     pub(super) head: Option<Arc<Node<T>>>,
