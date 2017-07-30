@@ -2,16 +2,16 @@ use std::sync::Arc;
 use std::fmt;
 
 #[derive(Clone)]
-struct Node<T: Clone> {
-    data: T,
-    next: List<T>,
+pub(super) struct Node<T: Clone> {
+    pub(super) data: T,
+    pub(super) next: List<T>,
 }
 
 #[derive(Clone)]
 pub struct List<T: Clone> {
-    head: Option<Arc<Node<T>>>,
-    tail: Option<Arc<Node<T>>>,
-    size: usize,
+    pub(super) head: Option<Arc<Node<T>>>,
+    pub(super) tail: Option<Arc<Node<T>>>,
+    pub(super) size: usize,
 }
 
 impl<T: Clone> List<T> {
