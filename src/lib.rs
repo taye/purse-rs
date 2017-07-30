@@ -1,6 +1,6 @@
 mod list;
 
-pub use list::List;
+pub use list::list::List;
 
 #[cfg(test)]
 mod tests {
