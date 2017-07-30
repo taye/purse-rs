@@ -224,6 +224,47 @@ impl<T: Clone> List<T> {
     }
 }
 
+/// Elements of a list may be accessed by index.
+///
+/// #Examples
+///
+/// ```
+/// # #[macro_use] extern crate purse;
+/// # fn main() {
+/// let list = purse_list![1, 2, 3];
+///
+/// assert_eq!(list[0], 1);
+/// assert_eq!(list[2], 3);
+/// # }
+/// ```
+impl<T: Clone> Index<usize> for List<T> {
+    type Output = T;
+
+    fn index(&self, index: usize) -> &T {
+        if index >= self.size {
+            panic!(
+                "index out of bounds: the len is {} but the index is {}",
+                self.size,
+                index
+            );
+        }
+
+        self.head.as_ref().unwrap().index(index)
+    }
+}
+
+impl<T: Clone> Node<T> {
+    fn index(&self, index: usize) -> &T {
+        match index {
+            0 => &self.data,
+            _ => {
+                assert!(self.next.size > 0);
+                self.next.head.as_ref().unwrap().index(index - 1)
+            }
+        }
+    }
+}
+
 impl<T> PartialEq for List<T>
 where
     T: Clone + PartialEq,
