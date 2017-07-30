@@ -337,7 +337,7 @@ impl<T: Clone + fmt::Debug> fmt::Debug for List<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.head {
             Some(ref link) => write!(f, "[{:?}]", link),
-            None => write!(f, "[:"),
+            None => write!(f, "[]"),
         }
     }
 }
