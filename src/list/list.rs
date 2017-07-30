@@ -70,7 +70,7 @@ impl<T: Clone> List<T> {
 
         List {
             head: head.clone(),
-            tail: head,
+            tail: self.tail.clone(),
             size: 1 + self.size,
         }
     }
@@ -121,8 +121,8 @@ impl<T: Clone> List<T> {
         }));
 
         List {
-            head: head,
-            tail: tail,
+            head: head.clone(),
+            tail: tail.or(head),
             size: size,
         }
     }
