@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::ops::Index;
 use std::fmt;
 
 #[derive(Clone)]
@@ -54,6 +55,7 @@ impl<T: Clone> List<T> {
     /// let prepended = list.prepend(0);
     ///
     /// assert_eq!(prepended, purse_list![0, 1, 2]);
+    /// # assert_eq!(prepended.last(), Some(&2));
     /// # }
     /// ```
     pub fn prepend(&self, data: T) -> Self {
@@ -110,6 +112,7 @@ impl<T: Clone> List<T> {
     /// let list = List::create(1, List::create(2, List::empty()));
     ///
     /// assert_eq!(list, purse_list![1, 2]);
+    /// # assert_eq!(list.last(), Some(&2));
     /// # }
     /// ```
     pub fn create(data: T, rest: Self) -> Self {
@@ -174,6 +177,50 @@ impl<T: Clone> List<T> {
     /// ```
     pub fn len(&self) -> usize {
         self.size
+    }
+
+    fn get_option_link_data(link: &Option<Arc<Node<T>>>) -> Option<&T> {
+        link.as_ref().map(|link| &link.data)
+    }
+
+    /// Returns a reference to the first element of the list or None if it's empty.
+    ///
+    /// #Examples
+    ///
+    /// ```
+    /// # #[macro_use] extern crate purse;
+    /// # fn main() {
+    /// use purse::List;
+    ///
+    /// let list1 = purse_list![1, 2, 3];
+    /// let list2 = purse_list!['x', 'y', 'z'];
+    ///
+    /// assert_eq!(list1.first().unwrap(), &1);
+    /// assert_eq!(list2.first().unwrap(), &'x');
+    /// # }
+    /// ```
+    pub fn first(&self) -> Option<&T> {
+        List::get_option_link_data(&self.head)
+    }
+
+    /// Returns a reference to the last element of the list or None if it's empty.
+    ///
+    /// #Examples
+    ///
+    /// ```
+    /// # #[macro_use] extern crate purse;
+    /// # fn main() {
+    /// use purse::List;
+    ///
+    /// let list1 = purse_list![1, 2, 3];
+    /// let list2 = purse_list!['x', 'y', 'z'];
+    ///
+    /// assert_eq!(list1.last().unwrap(), &3);
+    /// assert_eq!(list2.last().unwrap(), &'z');
+    /// # }
+    /// ```
+    pub fn last(&self) -> Option<&T> {
+        List::get_option_link_data(&self.tail)
     }
 }
 
