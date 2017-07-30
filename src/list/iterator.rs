@@ -35,11 +35,11 @@ impl<T: Clone> FromIterator<T> for List<T> {
     ///
     /// let from_range: List<i32> = (1..4).collect();
     ///
-    /// assert_eq!(from_range, list![1, 2, 3]);
+    /// assert_eq!(from_range, purse_list![1, 2, 3]);
     ///
     /// let from_vec = List::from_iter(vec![4, 5, 6]);
     ///
-    /// assert_eq!(from_vec, list![4, 5, 6]);
+    /// assert_eq!(from_vec, purse_list![4, 5, 6]);
     /// # }
     /// ```
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
@@ -66,7 +66,7 @@ impl<T: Clone> IntoIterator for List<T> {
     /// use purse::List;
     /// use std::iter::IntoIterator;
     ///
-    /// let list = list!["a", "b", "c"];
+    /// let list = purse_list!["a", "b", "c"];
     /// let mut string = String::new();
     ///
     /// for elem in list {

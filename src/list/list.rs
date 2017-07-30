@@ -48,12 +48,12 @@ impl<T: Clone> List<T> {
     ///
     /// let empty: List<i32> = List::empty();
     ///
-    /// assert_eq!(empty.prepend(9), list![9]);
+    /// assert_eq!(empty.prepend(9), purse_list![9]);
     ///
     /// let list = List::create(1, List::create(2, List::empty()));
     /// let prepended = list.prepend(0);
     ///
-    /// assert_eq!(prepended, list![0, 1, 2]);
+    /// assert_eq!(prepended, purse_list![0, 1, 2]);
     /// # }
     /// ```
     pub fn prepend(&self, data: T) -> Self {
@@ -86,12 +86,12 @@ impl<T: Clone> List<T> {
     ///
     /// let empty: List<i32> = List::empty();
     ///
-    /// assert_eq!(empty.append(9), list![9]);
+    /// assert_eq!(empty.append(9), purse_list![9]);
     ///
     /// let list = List::create(1, List::create(2, List::empty()));
     /// let appended = list.append(3);
     ///
-    /// assert_eq!(appended, list![1, 2, 3]);
+    /// assert_eq!(appended, purse_list![1, 2, 3]);
     /// # }
     /// ```
     pub fn append(&self, data: T) -> Self {
@@ -109,7 +109,7 @@ impl<T: Clone> List<T> {
     ///
     /// let list = List::create(1, List::create(2, List::empty()));
     ///
-    /// assert_eq!(list, list![1, 2]);
+    /// assert_eq!(list, purse_list![1, 2]);
     /// # }
     /// ```
     pub fn create(data: T, rest: Self) -> Self {
@@ -142,7 +142,7 @@ impl<T: Clone> List<T> {
     ///
     /// let concatted = list1.concat(&list2);
     ///
-    /// assert_eq!(concatted, list![1, 2, 3, 4]);
+    /// assert_eq!(concatted, purse_list![1, 2, 3, 4]);
     ///
     /// let empty: List<()> = List::empty();
     ///
@@ -254,13 +254,13 @@ impl<T: Clone> Node<T> {
 /// # #[macro_use] extern crate purse;
 /// # fn main() {
 /// use purse::List;
-/// let list = list![1, 2, 3];
+/// let list = purse_list![1, 2, 3];
 ///
 /// assert_eq!(list, List::create(1, List::create(2, List::create(3, List::empty()))));
 /// # }
 /// ```
 #[macro_export]
-macro_rules! list {
+macro_rules! purse_list {
     [] => { $crate::List::empty() };
 
     [ $head:expr ] => {
@@ -268,6 +268,6 @@ macro_rules! list {
     };
 
     [ $head:expr, $($rest:expr),* ] => {
-        $crate::List::create($head, list![$($rest),*])
+        $crate::List::create($head, purse_list![$($rest),*])
     };
 }
