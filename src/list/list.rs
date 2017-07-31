@@ -1,6 +1,25 @@
 use std::sync::Arc;
+use std::cell::UnsafeCell;
 use std::ops::Index;
 use std::fmt;
+
+type Link<T> = Option<Arc<UnsafeCell<Node<T>>>>;
+
+fn new_link<T: Clone>(node: Node<T>) -> Link<T> {
+    Some(Arc::new(UnsafeCell::new(node)))
+}
+
+fn get_unwrapped_link_node<T: Clone>(link: &Arc<UnsafeCell<Node<T>>>) -> &Node<T> {
+    get_unwrapped_link_node_mut(link)
+}
+
+fn get_unwrapped_link_node_mut<T: Clone>(link: &Arc<UnsafeCell<Node<T>>>) -> &mut Node<T> {
+    unsafe { &mut *link.get() }
+}
+
+fn get_link_node<T: Clone>(link: &Link<T>) -> &Node<T> {
+    get_unwrapped_link_node(link.as_ref().unwrap())
+}
 
 #[derive(Clone)]
 pub(super) struct Node<T: Clone> {
@@ -36,8 +55,8 @@ pub(super) struct Node<T: Clone> {
 /// ```
 #[derive(Clone)]
 pub struct List<T: Clone> {
-    pub(super) head: Option<Arc<Node<T>>>,
-    pub(super) tail: Option<Arc<Node<T>>>,
+    pub(super) head: Link<T>,
+    pub(super) tail: Link<T>,
     pub(super) size: usize,
 }
 
@@ -94,7 +113,7 @@ impl<T: Clone> List<T> {
             },
         };
 
-        let head = Some(Arc::new(node));
+        let head = new_link(node);
 
         List {
             head: head.clone(),
@@ -122,7 +141,7 @@ impl<T: Clone> List<T> {
     /// assert_eq!(appended, purse_list![1, 2, 3]);
     /// # }
     /// ```
-    pub fn append(&self, data: T) -> Self {
+    pub fn append(self, data: T) -> Self {
         self.concat(&List::create(data, List::empty()))
     }
 
@@ -144,10 +163,10 @@ impl<T: Clone> List<T> {
     pub fn create(data: T, rest: Self) -> Self {
         let tail = rest.tail.clone();
         let size = 1 + rest.size;
-        let head = Some(Arc::new(Node {
+        let head = new_link(Node {
             data: data,
             next: rest,
-        }));
+        });
 
         List {
             head: head.clone(),
@@ -175,14 +194,58 @@ impl<T: Clone> List<T> {
     ///
     /// let empty: List<()> = List::empty();
     ///
-    /// assert_eq!(empty.concat(&empty).len(), 0);
+    /// assert_eq!(empty.clone().concat(&empty).len(), 0);
     /// # }
     /// ```
-    pub fn concat(&self, right: &Self) -> Self {
+    pub fn concat(self, right: &Self) -> Self {
         match self.head {
-            Some(ref link) => link.concat_list(link, &right),
+            Some(ref link) => {
+                let strong_count = Arc::strong_count(link);
+
+                if strong_count == 1 {
+                    let mut list = self.clone();
+
+                    list.concat_mut(right);
+                    list
+                } else {
+                    let node = get_unwrapped_link_node(&link);
+
+                    node.concat_list(&self.head, &right)
+                }
+            }
             None => right.clone(),
         }
+    }
+
+    // Add the elements of a list to an existing list by mutating its fields recursively.
+    // This should be safe if the head Arc has either
+    //  - strong_count of 1 if the list len > 1
+    //  - strong_count -f 2 if the list has len == 1 (tail is a clone of head)
+    //
+    // As the Arcs are never downgraded to Weak references, the weak_count doesn't need to be
+    // considered.
+    pub(super) fn concat_mut(&mut self, right: &Self) {
+        let head = match self.head.clone() {
+            Some(link) => {
+                get_unwrapped_link_node_mut(&link).next.concat_mut(right);
+
+                Some(link)
+            }
+            None => right.head.clone(),
+        };
+
+        match self.tail {
+            Some(ref link) => {
+                let tail_node = get_unwrapped_link_node_mut(&link);
+
+                tail_node.next = right.clone();
+            },
+            None => {},
+        };
+
+        self.head = head.or(right.head.clone());
+        self.tail = right.tail.clone();
+        self.size += right.size;
     }
 
     /// Rerives the length of a list.
@@ -205,8 +268,10 @@ impl<T: Clone> List<T> {
         self.size
     }
 
-    fn get_option_link_data(link: &Option<Arc<Node<T>>>) -> Option<&T> {
-        link.as_ref().map(|link| &link.data)
+    fn get_link_data(link: &Link<T>) -> Option<&T> {
+        link.as_ref().map(|link_cell| {
+            &get_unwrapped_link_node(&link_cell).data
+        })
     }
 
     /// Returns a reference to the first element of the list or None if it's empty.
@@ -226,7 +291,7 @@ impl<T: Clone> List<T> {
     /// # }
     /// ```
     pub fn first(&self) -> Option<&T> {
-        List::get_option_link_data(&self.head)
+        List::get_link_data(&self.head)
     }
 
     /// Returns a reference to the last element of the list or None if it's empty.
@@ -246,7 +311,7 @@ impl<T: Clone> List<T> {
     /// # }
     /// ```
     pub fn last(&self) -> Option<&T> {
-        List::get_option_link_data(&self.tail)
+        List::get_link_data(&self.tail)
     }
 }
 
@@ -275,7 +340,7 @@ impl<T: Clone> Index<usize> for List<T> {
             );
         }
 
-        self.head.as_ref().unwrap().index(index)
+        &get_link_node(&self.head).index(index)
     }
 }
 
@@ -285,7 +350,10 @@ impl<T: Clone> Node<T> {
             0 => &self.data,
             _ => {
                 assert!(self.next.size > 0);
-                self.next.head.as_ref().unwrap().index(index - 1)
+
+                let node = &get_link_node(&self.next.head);
+
+                node.clone().index(index - 1)
             }
         }
     }
@@ -302,10 +370,12 @@ where
     /// # fn main() {
     /// use purse::List;
     ///
-    /// let list1: List<i32> = List::create(1, List::create(2, List::empty()));
-    /// let list2: List<i32> = List::create(1, List::create(2, List::empty()));
+    /// let list1 = List::create(1, List::create(2, List::empty()));
+    /// let list2 = List::create(1, List::create(2, List::empty()));
+    /// let list3 = list2.clone().concat(&List::empty());
     ///
     /// assert!(list1 == list2);
+    /// assert!(list1 == list3);
     /// assert!(List::<i32>::empty() == List::<i32>::empty());
     /// assert!(list1 != List::<i32>::empty());
     /// # }
@@ -320,6 +390,9 @@ where
             // both empty
             (&None, &None) => true,
             (&Some(ref self_head), &Some(ref other_head)) => {
+                let self_head = get_unwrapped_link_node(&self_head);
+                let other_head = get_unwrapped_link_node(&other_head);
+
                 self_head.data == other_head.data && self_head.next == other_head.next
             }
             _ => false,
@@ -336,7 +409,7 @@ where
 impl<T: Clone + fmt::Debug> fmt::Debug for List<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.head {
-            Some(ref link) => write!(f, "[{:?}]", link),
+            Some(ref link) => write!(f, "[{:?}]", get_unwrapped_link_node(&link)),
             None => write!(f, "[]"),
         }
     }
@@ -345,16 +418,20 @@ impl<T: Clone + fmt::Debug> fmt::Debug for List<T> {
 impl<T: Clone + fmt::Debug> fmt::Debug for Node<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.next.head {
-            Some(ref link) => write!(f, "{:?}, {:?}", self.data, link),
+            Some(ref link) => write!(f, "{:?}, {:?}", self.data, get_unwrapped_link_node(&link)),
             None => write!(f, "{:?}", self.data),
         }
     }
 }
 
 impl<T: Clone> Node<T> {
-    fn concat_list(&self, start: &Arc<Node<T>>, list: &List<T>) -> List<T> {
+    fn concat_list(&self, start: &Link<T>, list: &List<T>) -> List<T> {
         match self.next.head {
-            Some(ref link) => List::create(self.data.clone(), link.concat_list(start, list)),
+            Some(ref link) => {
+                let node = get_unwrapped_link_node(&link);
+
+                List::create(self.data.clone(), node.concat_list(start, list))
+            }
             None => List::create(self.data.clone(), list.clone()),
         }
     }

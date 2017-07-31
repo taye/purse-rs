@@ -13,9 +13,11 @@ impl<T: Clone> Iterator for IntoIter<T> {
 
         match list.head {
             Some(ref link) => {
-                self.list = link.next.clone();
+                let node = unsafe { &*link.get() };
 
-                Some(link.data.clone())
+                self.list = node.next.clone();
+
+                Some(node.data.clone())
             }
             None => None,
         }
