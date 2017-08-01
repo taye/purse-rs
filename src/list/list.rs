@@ -1,9 +1,10 @@
-use std::sync::Arc;
+use std::sync::{Arc, Weak};
 use std::cell::UnsafeCell;
 use std::ops::Index;
 use std::fmt;
 
 type Link<T> = Option<Arc<UnsafeCell<Node<T>>>>;
+type WeakLink<T> = Option<Weak<UnsafeCell<Node<T>>>>;
 
 fn new_link<T: Clone>(node: Node<T>) -> Link<T> {
     Some(Arc::new(UnsafeCell::new(node)))
@@ -56,7 +57,7 @@ pub(super) struct Node<T: Clone> {
 #[derive(Clone)]
 pub struct List<T: Clone> {
     pub(super) head: Link<T>,
-    pub(super) tail: Link<T>,
+    pub(super) tail: WeakLink<T>,
     pub(super) size: usize,
 }
 
@@ -170,7 +171,7 @@ impl<T: Clone> List<T> {
 
         List {
             head: head.clone(),
-            tail: tail.or(head),
+            tail: tail.or(head.as_ref().map(Arc::downgrade)),
             size: size,
         }
     }
@@ -218,12 +219,7 @@ impl<T: Clone> List<T> {
     }
 
     // Add the elements of a list to an existing list by mutating its fields recursively.
-    // This should be safe if the head Arc has either
-    //  - strong_count of 1 if the list len > 1
-    //  - strong_count -f 2 if the list has len == 1 (tail is a clone of head)
-    //
-    // As the Arcs are never downgraded to Weak references, the weak_count doesn't need to be
-    // considered.
+    // This should be safe if the head Arc has a strong_count of only 1.
     pub(super) fn concat_mut(&mut self, right: &Self) {
         let head = match self.head.clone() {
             Some(link) => {
@@ -236,11 +232,12 @@ impl<T: Clone> List<T> {
 
         match self.tail {
             Some(ref link) => {
-                let tail_node = get_unwrapped_link_node_mut(&link);
+                let tail = link.upgrade().unwrap();
+                let tail_node = get_unwrapped_link_node_mut(&tail);
 
                 tail_node.next = right.clone();
-            },
-            None => {},
+            }
+            None => {}
         };
 
         self.head = head.or(right.head.clone());
@@ -311,7 +308,9 @@ impl<T: Clone> List<T> {
     /// # }
     /// ```
     pub fn last(&self) -> Option<&T> {
-        List::get_link_data(&self.tail)
+        self.tail.as_ref().map(|weak| unsafe {
+            &(*weak.upgrade().unwrap().get()).data
+        })
     }
 }
 
