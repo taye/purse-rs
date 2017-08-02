@@ -1,4 +1,5 @@
 use std::sync::{Arc, Weak};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::cell::UnsafeCell;
 use std::ops::Index;
 use std::fmt;
@@ -26,6 +27,7 @@ fn get_link_node<T: Clone>(link: &Link<T>) -> &Node<T> {
 pub(super) struct Node<T: Clone> {
     pub(super) data: T,
     pub(super) next: List<T>,
+    mutating: Arc<AtomicBool>,
 }
 
 /// A persistent singly linked list of elements.
@@ -112,6 +114,7 @@ impl<T: Clone> List<T> {
                 tail: self.tail.clone(),
                 size: self.size,
             },
+            mutating: Arc::new(AtomicBool::new(false)),
         };
 
         let head = new_link(node);
@@ -167,6 +170,7 @@ impl<T: Clone> List<T> {
         let head = new_link(Node {
             data: data,
             next: rest,
+            mutating: Arc::new(AtomicBool::new(false)),
         });
 
         List {
@@ -188,10 +192,13 @@ impl<T: Clone> List<T> {
     ///
     /// let list1 = List::create(1, List::create(2, List::empty()));
     /// let list2 = List::create(3, List::create(4, List::empty()));
+    /// let list3 = list2.clone();
     ///
-    /// let concatted = list1.concat(&list2);
+    /// let concat_1_2 = list1.concat(&list2);
+    /// let concat_2_3 = list2.concat(&list3);
     ///
-    /// assert_eq!(concatted, purse_list![1, 2, 3, 4]);
+    /// assert_eq!(concat_1_2, purse_list![1, 2, 3, 4]);
+    /// assert_eq!(concat_2_3, purse_list![3, 4, 3, 4]);
     ///
     /// let empty: List<()> = List::empty();
     ///
@@ -199,27 +206,45 @@ impl<T: Clone> List<T> {
     /// # }
     /// ```
     pub fn concat(self, right: &Self) -> Self {
+        let do_immut = || List::concat_immut(&self.head, right);
+
         match self.head {
             Some(ref link) => {
-                let strong_count = Arc::strong_count(link);
+                // If another list has this link as its head, concat immutably
+                if Arc::strong_count(link) != 1 {
+                    return do_immut();
+                }
 
-                if strong_count == 1 {
+                let node = get_unwrapped_link_node_mut(link);
+                let already_mutating = node.mutating.compare_and_swap(
+                    false,
+                    true,
+                    Ordering::Relaxed,
+                );
+
+                // if another list is modifying this link, concat immutably
+                if already_mutating {
+                    do_immut()
+                } else {
                     let mut list = self.clone();
 
                     list.concat_mut(right);
-                    list
-                } else {
-                    let node = get_unwrapped_link_node(&link);
+                    node.mutating.store(false, Ordering::Relaxed);
 
-                    node.concat_list(&self.head, &right)
+                    list
                 }
             }
             None => right.clone(),
         }
     }
 
+    pub(super) fn concat_immut(link: &Link<T>, right: &Self) -> Self {
+        let node = get_unwrapped_link_node(link.as_ref().unwrap());
+
+        node.concat_list(link, &right)
+    }
+
     // Add the elements of a list to an existing list by mutating its fields recursively.
-    // This should be safe if the head Arc has a strong_count of only 1.
     pub(super) fn concat_mut(&mut self, right: &Self) {
         let head = match self.head.clone() {
             Some(link) => {
