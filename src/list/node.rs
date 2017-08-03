@@ -58,6 +58,18 @@ impl<T: Clone> Node<T> {
             },
         )
     }
+
+    pub fn try_mutate(&self) -> bool {
+        !self.mutating.compare_and_swap(
+            false,
+            true,
+            Ordering::Relaxed,
+        )
+    }
+
+    pub fn end_mutate(&self) {
+        self.mutating.store(false, Ordering::Relaxed);
+    }
 }
 
 impl<T: Clone + fmt::Debug> fmt::Debug for Node<T> {

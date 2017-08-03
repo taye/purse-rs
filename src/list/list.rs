@@ -195,22 +195,17 @@ impl<T: Clone> List<T> {
             }
 
             let node = node::get_unwrapped_link_node_mut(link);
-            let already_mutating = node.mutating.compare_and_swap(
-                false,
-                true,
-                Ordering::Relaxed,
-            );
 
             // if another list is modifying this link, concat immutably
-            if already_mutating {
-                do_immut()
-            } else {
+            if node.try_mutate() {
                 let mut list = self.clone();
 
                 list.concat_mut(right);
-                node.mutating.store(false, Ordering::Relaxed);
+                node.end_mutate();
 
                 list
+            } else {
+                do_immut()
             }
         })
     }
