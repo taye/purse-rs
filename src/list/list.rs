@@ -31,13 +31,13 @@ use super::node::{self, Node, Link, WeakLink};
 /// }
 /// ```
 #[derive(Clone, Default)]
-pub struct List<T: Clone> {
+pub struct List<T> {
     pub(super) head: Link<T>,
     pub(super) tail: WeakLink<T>,
     pub(super) size: usize,
 }
 
-impl<T: Clone> List<T> {
+impl<T> List<T> {
     /// Creates an empty list.
     ///
     /// #Examples
@@ -118,7 +118,10 @@ impl<T: Clone> List<T> {
     /// assert_eq!(appended, purse_list![1, 2, 3]);
     /// # }
     /// ```
-    pub fn append(self, data: T) -> Self {
+    pub fn append(self, data: T) -> Self
+    where
+        T: Clone,
+    {
         self.concat(&List::create(data, List::empty()))
     }
 
@@ -174,7 +177,10 @@ impl<T: Clone> List<T> {
     /// assert_eq!(empty.clone().concat(&empty).len(), 0);
     /// # }
     /// ```
-    pub fn concat(self, right: &Self) -> Self {
+    pub fn concat(self, right: &Self) -> Self
+    where
+        T: Clone,
+    {
         let do_immut = || List::concat_immut(&self.head, right);
 
         self.head.as_ref().map_or(right.clone(), |link| {
@@ -204,14 +210,20 @@ impl<T: Clone> List<T> {
         })
     }
 
-    pub(super) fn concat_immut(link: &Link<T>, right: &Self) -> Self {
+    pub(super) fn concat_immut(link: &Link<T>, right: &Self) -> Self
+    where
+        T: Clone,
+    {
         let node = node::get_unwrapped_link_node(link.as_ref().unwrap());
 
         node.concat_list(link, &right)
     }
 
     // Add the elements of a list to an existing list by mutating its fields recursively.
-    pub(super) fn concat_mut(&mut self, right: &Self) {
+    pub(super) fn concat_mut(&mut self, right: &Self)
+    where
+        T: Clone,
+    {
         let head = match self.head.clone() {
             Some(link) => {
                 node::get_unwrapped_link_node_mut(&link).next.concat_mut(
@@ -317,7 +329,7 @@ impl<T: Clone> List<T> {
 /// assert_eq!(list[2], 3);
 /// # }
 /// ```
-impl<T: Clone> Index<usize> for List<T> {
+impl<T> Index<usize> for List<T> {
     type Output = T;
 
     fn index(&self, index: usize) -> &T {
@@ -335,7 +347,7 @@ impl<T: Clone> Index<usize> for List<T> {
 
 impl<T> PartialEq for List<T>
 where
-    T: Clone + PartialEq,
+    T: PartialEq,
 {
     /// #Examples
     ///
@@ -376,11 +388,11 @@ where
 
 impl<T> Eq for List<T>
 where
-    T: Clone + PartialEq,
+    T: PartialEq,
 {
 }
 
-impl<T: Clone + fmt::Debug> fmt::Debug for List<T> {
+impl<T: fmt::Debug> fmt::Debug for List<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.head.as_ref().map_or(write!(f, "[]"), |ref link| {
             write!(f, "[{:?}]", node::get_unwrapped_link_node(&link))
@@ -405,7 +417,7 @@ impl<T: Clone + fmt::Debug> fmt::Debug for List<T> {
 /// ```
 unsafe impl<T> Send for List<T>
 where
-    T: Clone + Sync + Send,
+    T: Sync + Send,
 {
 }
 
@@ -433,7 +445,7 @@ where
 /// ```
 unsafe impl<T> Sync for List<T>
 where
-    T: Clone + Sync + Send,
+    T: Sync + Send,
 {
 }
 

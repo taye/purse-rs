@@ -5,9 +5,8 @@ use super::node::Node;
 
 pub type ArcUnsafeNode<T> = Arc<UnsafeCell<Node<T>>>;
 
-pub trait LinkRef<RN>
-{
-    type DataType: Clone;
+pub trait LinkRef<RN> {
+    type DataType;
 
     fn get(&self) -> &Node<Self::DataType>;
 }
@@ -17,8 +16,7 @@ pub trait LinkRefMut<RN>: LinkRef<RN>
     fn get_mut(&self) -> &mut Node<Self::DataType>;
 }
 
-impl<T: Clone> LinkRef<Arc<Node<T>>> for Arc<Node<T>>
-{
+impl<T> LinkRef<Arc<Node<T>>> for Arc<Node<T>> {
     type DataType = T;
 
     fn get(&self) -> &Node<T> {
@@ -26,9 +24,7 @@ impl<T: Clone> LinkRef<Arc<Node<T>>> for Arc<Node<T>>
     }
 }
 
-impl<T> LinkRef<ArcUnsafeNode<T>> for ArcUnsafeNode<T>
-where T: Clone
-{
+impl<T> LinkRef<ArcUnsafeNode<T>> for ArcUnsafeNode<T> {
     type DataType = T;
 
     fn get(&self) -> &Node<T> {
@@ -36,10 +32,7 @@ where T: Clone
     }
 }
 
-impl<T> LinkRefMut<ArcUnsafeNode<T>> for ArcUnsafeNode<T>
-where
-    T: Clone,
-{
+impl<T> LinkRefMut<ArcUnsafeNode<T>> for ArcUnsafeNode<T> {
     fn get_mut(&self) -> &mut Node<T> {
         unsafe { &mut *(**self).get() }
     }

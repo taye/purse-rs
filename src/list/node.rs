@@ -10,30 +10,30 @@ use super::link::{ArcUnsafeNode, LinkRef, LinkRefMut};
 pub type Link<T> = Option<ArcUnsafeNode<T>>;
 pub type WeakLink<T> = Option<Weak<UnsafeCell<Node<T>>>>;
 
-pub fn new_link<T: Clone>(node: Node<T>) -> Link<T> {
+pub fn new_link<T>(node: Node<T>) -> Link<T> {
     Some(Arc::new(UnsafeCell::new(node)))
 }
 
-pub fn get_unwrapped_link_node<T: Clone>(link: &ArcUnsafeNode<T>) -> &Node<T> {
+pub fn get_unwrapped_link_node<T>(link: &ArcUnsafeNode<T>) -> &Node<T> {
     link.get()
 }
 
-pub fn get_unwrapped_link_node_mut<T: Clone>(link: &ArcUnsafeNode<T>) -> &mut Node<T> {
+pub fn get_unwrapped_link_node_mut<T>(link: &ArcUnsafeNode<T>) -> &mut Node<T> {
     link.get_mut()
 }
 
-pub fn get_link_node<T: Clone>(link: &Link<T>) -> &Node<T> {
+pub fn get_link_node<T>(link: &Link<T>) -> &Node<T> {
     link.as_ref().unwrap().get()
 }
 
 #[derive(Clone)]
-pub struct Node<T: Clone> {
+pub struct Node<T> {
     pub data: T,
     pub next: List<T>,
     mutating: Arc<AtomicBool>,
 }
 
-impl<T: Clone> Node<T> {
+impl<T> Node<T> {
     pub fn new(data: T, next: List<T>) -> Self {
         Node {
             data: data,
@@ -55,7 +55,10 @@ impl<T: Clone> Node<T> {
         }
     }
 
-    pub fn concat_list(&self, start: &Link<T>, list: &List<T>) -> List<T> {
+    pub fn concat_list(&self, start: &Link<T>, list: &List<T>) -> List<T>
+    where
+        T: Clone,
+    {
         self.next.head.as_ref().map_or(
             List::create(
                 self.data.clone(),
@@ -82,7 +85,7 @@ impl<T: Clone> Node<T> {
     }
 }
 
-impl<T: Clone + fmt::Debug> fmt::Debug for Node<T> {
+impl<T: fmt::Debug> fmt::Debug for Node<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.next.head.as_ref().map_or(
             write!(f, "{:?}", self.data),
