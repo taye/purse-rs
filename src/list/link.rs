@@ -1,10 +1,9 @@
 use std::sync::{Arc, Weak};
 use std::cell::UnsafeCell;
-use std::ops::Deref;
 
 use super::node::Node;
 
-pub trait LinkRef<RT>
+pub trait LinkRef<RN>
 {
     type DataType: Clone;
 
@@ -12,7 +11,7 @@ pub trait LinkRef<RT>
     fn get(&self) -> &Node<Self::DataType>;
 }
 
-pub trait MutLinkRef<RT>: LinkRef<RT>
+pub trait MutLinkRef<RN>: LinkRef<RN>
 {
     fn get_mut(&self) -> &mut Node<Self::DataType>;
 }
@@ -40,6 +39,8 @@ mod test {
         let node = Node::new(0, List::empty());
         let node_link = Arc::new(node);
 
-        LinkRef::get(&node_link);
+        let node = node_link.get();
+
+        assert_eq!(node.data, 0);
     }
 }
