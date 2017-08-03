@@ -208,34 +208,31 @@ impl<T: Clone> List<T> {
     pub fn concat(self, right: &Self) -> Self {
         let do_immut = || List::concat_immut(&self.head, right);
 
-        match self.head {
-            Some(ref link) => {
-                // If another list has this link as its head, concat immutably
-                if Arc::strong_count(link) != 1 {
-                    return do_immut();
-                }
-
-                let node = get_unwrapped_link_node_mut(link);
-                let already_mutating = node.mutating.compare_and_swap(
-                    false,
-                    true,
-                    Ordering::Relaxed,
-                );
-
-                // if another list is modifying this link, concat immutably
-                if already_mutating {
-                    do_immut()
-                } else {
-                    let mut list = self.clone();
-
-                    list.concat_mut(right);
-                    node.mutating.store(false, Ordering::Relaxed);
-
-                    list
-                }
+        self.head.as_ref().map_or(right.clone(), |link| {
+            // If another list has this link as its head, concat immutably
+            if Arc::strong_count(link) != 1 {
+                return do_immut();
             }
-            None => right.clone(),
-        }
+
+            let node = get_unwrapped_link_node_mut(link);
+            let already_mutating = node.mutating.compare_and_swap(
+                false,
+                true,
+                Ordering::Relaxed,
+            );
+
+            // if another list is modifying this link, concat immutably
+            if already_mutating {
+                do_immut()
+            } else {
+                let mut list = self.clone();
+
+                list.concat_mut(right);
+                node.mutating.store(false, Ordering::Relaxed);
+
+                list
+            }
+        })
     }
 
     pub(super) fn concat_immut(link: &Link<T>, right: &Self) -> Self {
@@ -255,14 +252,11 @@ impl<T: Clone> List<T> {
             None => right.head.clone(),
         };
 
-        match self.tail {
-            Some(ref link) => {
-                let tail = link.upgrade().unwrap();
-                let tail_node = get_unwrapped_link_node_mut(&tail);
+        if let Some(ref link) = self.tail {
+            let tail = link.upgrade().unwrap();
+            let tail_node = get_unwrapped_link_node_mut(&tail);
 
-                tail_node.next = right.clone();
-            }
-            None => {}
+            tail_node.next = right.clone();
         };
 
         self.head = head.or(right.head.clone());
@@ -432,32 +426,36 @@ where
 
 impl<T: Clone + fmt::Debug> fmt::Debug for List<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self.head {
-            Some(ref link) => write!(f, "[{:?}]", get_unwrapped_link_node(&link)),
-            None => write!(f, "[]"),
-        }
+        self.head.as_ref().map_or(write!(f, "[]"), |ref link| {
+            write!(f, "[{:?}]", get_unwrapped_link_node(&link))
+        })
     }
 }
 
 impl<T: Clone + fmt::Debug> fmt::Debug for Node<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self.next.head {
-            Some(ref link) => write!(f, "{:?}, {:?}", self.data, get_unwrapped_link_node(&link)),
-            None => write!(f, "{:?}", self.data),
-        }
+        self.next.head.as_ref().map_or(
+            write!(f, "{:?}", self.data),
+            |ref link| {
+                write!(f, "{:?}, {:?}", self.data, get_unwrapped_link_node(&link))
+            },
+        )
     }
 }
 
 impl<T: Clone> Node<T> {
     fn concat_list(&self, start: &Link<T>, list: &List<T>) -> List<T> {
-        match self.next.head {
-            Some(ref link) => {
+        self.next.head.as_ref().map_or(
+            List::create(
+                self.data.clone(),
+                list.clone(),
+            ),
+            |link| {
                 let node = get_unwrapped_link_node(&link);
 
                 List::create(self.data.clone(), node.concat_list(start, list))
-            }
-            None => List::create(self.data.clone(), list.clone()),
-        }
+            },
+        )
     }
 }
 
