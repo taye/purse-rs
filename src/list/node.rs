@@ -5,23 +5,25 @@ use std::fmt;
 
 use List;
 
-pub type Link<T> = Option<Arc<UnsafeCell<Node<T>>>>;
+use super::link::{ArcUnsafeNode, LinkRef, LinkRefMut};
+
+pub type Link<T> = Option<ArcUnsafeNode<T>>;
 pub type WeakLink<T> = Option<Weak<UnsafeCell<Node<T>>>>;
 
 pub fn new_link<T: Clone>(node: Node<T>) -> Link<T> {
     Some(Arc::new(UnsafeCell::new(node)))
 }
 
-pub fn get_unwrapped_link_node<T: Clone>(link: &Arc<UnsafeCell<Node<T>>>) -> &Node<T> {
-    get_unwrapped_link_node_mut(link)
+pub fn get_unwrapped_link_node<T: Clone>(link: &ArcUnsafeNode<T>) -> &Node<T> {
+    link.get()
 }
 
-pub fn get_unwrapped_link_node_mut<T: Clone>(link: &Arc<UnsafeCell<Node<T>>>) -> &mut Node<T> {
-    unsafe { &mut *(**link).get() }
+pub fn get_unwrapped_link_node_mut<T: Clone>(link: &ArcUnsafeNode<T>) -> &mut Node<T> {
+    link.get_mut()
 }
 
 pub fn get_link_node<T: Clone>(link: &Link<T>) -> &Node<T> {
-    get_unwrapped_link_node(link.as_ref().unwrap())
+    link.as_ref().unwrap().get()
 }
 
 #[derive(Clone)]
