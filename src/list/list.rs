@@ -1,34 +1,9 @@
-use std::sync::{Arc, Weak};
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::cell::UnsafeCell;
+use std::sync::Arc;
+use std::sync::atomic::AtomicBool;
 use std::ops::Index;
 use std::fmt;
 
-type Link<T> = Option<Arc<UnsafeCell<Node<T>>>>;
-type WeakLink<T> = Option<Weak<UnsafeCell<Node<T>>>>;
-
-fn new_link<T: Clone>(node: Node<T>) -> Link<T> {
-    Some(Arc::new(UnsafeCell::new(node)))
-}
-
-fn get_unwrapped_link_node<T: Clone>(link: &Arc<UnsafeCell<Node<T>>>) -> &Node<T> {
-    get_unwrapped_link_node_mut(link)
-}
-
-fn get_unwrapped_link_node_mut<T: Clone>(link: &Arc<UnsafeCell<Node<T>>>) -> &mut Node<T> {
-    unsafe { &mut *link.get() }
-}
-
-fn get_link_node<T: Clone>(link: &Link<T>) -> &Node<T> {
-    get_unwrapped_link_node(link.as_ref().unwrap())
-}
-
-#[derive(Clone)]
-pub(super) struct Node<T: Clone> {
-    pub(super) data: T,
-    pub(super) next: List<T>,
-    mutating: Arc<AtomicBool>,
-}
+use super::node::{self, Node, Link, WeakLink};
 
 /// A persistent singly linked list of elements.
 ///
@@ -117,7 +92,7 @@ impl<T: Clone> List<T> {
             mutating: Arc::new(AtomicBool::new(false)),
         };
 
-        let head = new_link(node);
+        let head = node::new_link(node);
 
         List {
             head: head.clone(),
@@ -167,7 +142,7 @@ impl<T: Clone> List<T> {
     pub fn create(data: T, rest: Self) -> Self {
         let tail = rest.tail.clone();
         let size = 1 + rest.size;
-        let head = new_link(Node {
+        let head = node::new_link(Node {
             data: data,
             next: rest,
             mutating: Arc::new(AtomicBool::new(false)),
@@ -219,7 +194,7 @@ impl<T: Clone> List<T> {
                 return do_immut();
             }
 
-            let node = get_unwrapped_link_node_mut(link);
+            let node = node::get_unwrapped_link_node_mut(link);
             let already_mutating = node.mutating.compare_and_swap(
                 false,
                 true,
@@ -241,7 +216,7 @@ impl<T: Clone> List<T> {
     }
 
     pub(super) fn concat_immut(link: &Link<T>, right: &Self) -> Self {
-        let node = get_unwrapped_link_node(link.as_ref().unwrap());
+        let node = node::get_unwrapped_link_node(link.as_ref().unwrap());
 
         node.concat_list(link, &right)
     }
@@ -250,7 +225,9 @@ impl<T: Clone> List<T> {
     pub(super) fn concat_mut(&mut self, right: &Self) {
         let head = match self.head.clone() {
             Some(link) => {
-                get_unwrapped_link_node_mut(&link).next.concat_mut(right);
+                node::get_unwrapped_link_node_mut(&link).next.concat_mut(
+                    right,
+                );
 
                 Some(link)
             }
@@ -259,7 +236,7 @@ impl<T: Clone> List<T> {
 
         if let Some(ref link) = self.tail {
             let tail = link.upgrade().unwrap();
-            let tail_node = get_unwrapped_link_node_mut(&tail);
+            let tail_node = node::get_unwrapped_link_node_mut(&tail);
 
             tail_node.next = right.clone();
         };
@@ -291,7 +268,7 @@ impl<T: Clone> List<T> {
 
     fn get_link_data(link: &Link<T>) -> Option<&T> {
         link.as_ref().map(|link_cell| {
-            &get_unwrapped_link_node(&link_cell).data
+            &node::get_unwrapped_link_node(&link_cell).data
         })
     }
 
@@ -363,22 +340,7 @@ impl<T: Clone> Index<usize> for List<T> {
             );
         }
 
-        &get_link_node(&self.head).index(index)
-    }
-}
-
-impl<T: Clone> Node<T> {
-    fn index(&self, index: usize) -> &T {
-        match index {
-            0 => &self.data,
-            _ => {
-                assert!(self.next.size > 0);
-
-                let node = &get_link_node(&self.next.head);
-
-                node.index(index - 1)
-            }
-        }
+        &node::get_link_node(&self.head).index(index)
     }
 }
 
@@ -413,8 +375,8 @@ where
             // both empty
             (&None, &None) => true,
             (&Some(ref self_head), &Some(ref other_head)) => {
-                let self_head = get_unwrapped_link_node(&self_head);
-                let other_head = get_unwrapped_link_node(&other_head);
+                let self_head = node::get_unwrapped_link_node(&self_head);
+                let other_head = node::get_unwrapped_link_node(&other_head);
 
                 self_head.data == other_head.data && self_head.next == other_head.next
             }
@@ -432,35 +394,8 @@ where
 impl<T: Clone + fmt::Debug> fmt::Debug for List<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.head.as_ref().map_or(write!(f, "[]"), |ref link| {
-            write!(f, "[{:?}]", get_unwrapped_link_node(&link))
+            write!(f, "[{:?}]", node::get_unwrapped_link_node(&link))
         })
-    }
-}
-
-impl<T: Clone + fmt::Debug> fmt::Debug for Node<T> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.next.head.as_ref().map_or(
-            write!(f, "{:?}", self.data),
-            |ref link| {
-                write!(f, "{:?}, {:?}", self.data, get_unwrapped_link_node(&link))
-            },
-        )
-    }
-}
-
-impl<T: Clone> Node<T> {
-    fn concat_list(&self, start: &Link<T>, list: &List<T>) -> List<T> {
-        self.next.head.as_ref().map_or(
-            List::create(
-                self.data.clone(),
-                list.clone(),
-            ),
-            |link| {
-                let node = get_unwrapped_link_node(&link);
-
-                List::create(self.data.clone(), node.concat_list(start, list))
-            },
-        )
     }
 }
 
