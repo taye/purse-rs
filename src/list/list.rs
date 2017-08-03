@@ -209,6 +209,11 @@ impl<T: Clone> List<T> {
         let do_immut = || List::concat_immut(&self.head, right);
 
         self.head.as_ref().map_or(right.clone(), |link| {
+            // if the right list is empty, return this same list cloned
+            if right.size == 0 {
+                return self.clone();
+            }
+
             // If another list has this link as its head, concat immutably
             if Arc::strong_count(link) != 1 {
                 return do_immut();
