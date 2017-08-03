@@ -3,7 +3,7 @@ use std::cell::UnsafeCell;
 
 use super::node::Node;
 
-type ArcUnsafeNode<T> = Arc<UnsafeCell<Node<T>>>;
+pub type ArcUnsafeNode<T> = Arc<UnsafeCell<Node<T>>>;
 
 pub trait LinkRef<RN>
 {
@@ -13,7 +13,7 @@ pub trait LinkRef<RN>
     fn get(&self) -> &Node<Self::DataType>;
 }
 
-pub trait MutLinkRef<RN>: LinkRef<RN>
+pub trait LinkRefMut<RN>: LinkRef<RN>
 {
     fn get_mut(&self) -> &mut Node<Self::DataType>;
 }
@@ -45,7 +45,7 @@ where T: Clone
     }
 }
 
-impl<T> MutLinkRef<ArcUnsafeNode<T>> for ArcUnsafeNode<T>
+impl<T> LinkRefMut<ArcUnsafeNode<T>> for ArcUnsafeNode<T>
 where
     T: Clone,
 {
