@@ -9,11 +9,7 @@ pub trait LinkRef<RN> {
     type DataType;
 
     fn get(&self) -> &Node<Self::DataType>;
-}
-
-pub trait LinkRefMut<RN>: LinkRef<RN>
-{
-    fn get_mut(&self) -> &mut Node<Self::DataType>;
+    fn get_mut(&self) -> Option<&mut Node<Self::DataType>>;
 }
 
 impl<T> LinkRef<Arc<Node<T>>> for Arc<Node<T>> {
@@ -21,6 +17,10 @@ impl<T> LinkRef<Arc<Node<T>>> for Arc<Node<T>> {
 
     fn get(&self) -> &Node<T> {
         &*self
+    }
+
+    fn get_mut(&self) -> Option<&mut Node<T>> {
+        None
     }
 }
 
@@ -30,11 +30,9 @@ impl<T> LinkRef<ArcUnsafeNode<T>> for ArcUnsafeNode<T> {
     fn get(&self) -> &Node<T> {
         unsafe { &*(**self).get() }
     }
-}
 
-impl<T> LinkRefMut<ArcUnsafeNode<T>> for ArcUnsafeNode<T> {
-    fn get_mut(&self) -> &mut Node<T> {
-        unsafe { &mut *(**self).get() }
+    fn get_mut(&self) -> Option<&mut Node<T>> {
+        Some(unsafe { &mut *(**self).get() })
     }
 }
 
@@ -58,7 +56,7 @@ mod test {
         let node = Node::new("mut".to_string(), List::empty());
         let node_link = Arc::new(UnsafeCell::new(node));
 
-        let mut_node = node_link.get_mut();
+        let mut_node = node_link.get_mut().unwrap();
 
         assert_eq!(mut_node.data, "mut");
 

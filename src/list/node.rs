@@ -5,7 +5,7 @@ use std::fmt;
 
 use List;
 
-use super::link::{ArcUnsafeNode, LinkRef, LinkRefMut};
+use super::link::{ArcUnsafeNode, LinkRef};
 
 pub type Link<T> = Option<ArcUnsafeNode<T>>;
 pub type WeakLink<T> = Option<Weak<UnsafeCell<Node<T>>>>;
@@ -19,7 +19,7 @@ pub fn get_unwrapped_link_node<T>(link: &ArcUnsafeNode<T>) -> &Node<T> {
 }
 
 pub fn get_unwrapped_link_node_mut<T>(link: &ArcUnsafeNode<T>) -> &mut Node<T> {
-    link.get_mut()
+    link.get_mut().unwrap()
 }
 
 pub fn get_link_node<T>(link: &Link<T>) -> &Node<T> {
