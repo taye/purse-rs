@@ -5,15 +5,15 @@ use super::node::Node;
 
 pub type ArcUnsafeNode<T> = Arc<UnsafeCell<Node<T>>>;
 
-pub trait LinkRef<RN> {
-    type DataType;
+pub trait LinkRef {
+    type Data;
 
-    fn get(&self) -> &Node<Self::DataType>;
-    fn get_mut(&self) -> Option<&mut Node<Self::DataType>>;
+    fn get(&self) -> &Node<Self::Data>;
+    fn get_mut(&self) -> Option<&mut Node<Self::Data>>;
 }
 
-impl<T> LinkRef<Arc<Node<T>>> for Arc<Node<T>> {
-    type DataType = T;
+impl<T> LinkRef for Arc<Node<T>> {
+    type Data = T;
 
     fn get(&self) -> &Node<T> {
         &*self
@@ -24,8 +24,8 @@ impl<T> LinkRef<Arc<Node<T>>> for Arc<Node<T>> {
     }
 }
 
-impl<T> LinkRef<ArcUnsafeNode<T>> for ArcUnsafeNode<T> {
-    type DataType = T;
+impl<T> LinkRef for ArcUnsafeNode<T> {
+    type Data = T;
 
     fn get(&self) -> &Node<T> {
         unsafe { &*(**self).get() }
