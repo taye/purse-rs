@@ -9,7 +9,6 @@ pub trait LinkRef<RN>
 {
     type DataType: Clone;
 
-    fn new(node: Node<Self::DataType>) -> Self;
     fn get(&self) -> &Node<Self::DataType>;
 }
 
@@ -22,10 +21,6 @@ impl<T: Clone> LinkRef<Arc<Node<T>>> for Arc<Node<T>>
 {
     type DataType = T;
 
-    fn new(node: Node<T>) -> Self {
-        Arc::new(node)
-    }
-
     fn get(&self) -> &Node<T> {
         &*self
     }
@@ -35,10 +30,6 @@ impl<T> LinkRef<ArcUnsafeNode<T>> for ArcUnsafeNode<T>
 where T: Clone
 {
     type DataType = T;
-
-    fn new(node: Node<T>) -> Self {
-        Arc::new(UnsafeCell::new(node))
-    }
 
     fn get(&self) -> &Node<T> {
         unsafe { &*(**self).get() }
