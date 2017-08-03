@@ -56,7 +56,7 @@ pub(super) struct Node<T: Clone> {
 ///     assert_eq!(list2[1], list1);
 /// }
 /// ```
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct List<T: Clone> {
     pub(super) head: Link<T>,
     pub(super) tail: WeakLink<T>,
