@@ -1,5 +1,4 @@
 use std::sync::Arc;
-use std::sync::atomic::AtomicBool;
 use std::ops::Index;
 use std::fmt;
 
@@ -82,15 +81,14 @@ impl<T: Clone> List<T> {
     /// # }
     /// ```
     pub fn prepend(&self, data: T) -> Self {
-        let node = Node {
-            data: data,
-            next: List {
+        let node = Node::new(
+            data,
+            List {
                 head: self.head.clone(),
                 tail: self.tail.clone(),
                 size: self.size,
             },
-            mutating: Arc::new(AtomicBool::new(false)),
-        };
+        );
 
         let head = node::new_link(node);
 
@@ -142,11 +140,7 @@ impl<T: Clone> List<T> {
     pub fn create(data: T, rest: Self) -> Self {
         let tail = rest.tail.clone();
         let size = 1 + rest.size;
-        let head = node::new_link(Node {
-            data: data,
-            next: rest,
-            mutating: Arc::new(AtomicBool::new(false)),
-        });
+        let head = node::new_link(Node::new(data, rest));
 
         List {
             head: head.clone(),

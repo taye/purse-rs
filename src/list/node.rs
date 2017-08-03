@@ -28,10 +28,18 @@ pub fn get_link_node<T: Clone>(link: &Link<T>) -> &Node<T> {
 pub struct Node<T: Clone> {
     pub data: T,
     pub next: List<T>,
-    pub mutating: Arc<AtomicBool>,
+    mutating: Arc<AtomicBool>,
 }
 
 impl<T: Clone> Node<T> {
+    pub fn new(data: T, next: List<T>) -> Self {
+        Node {
+            data: data,
+            next: next,
+            mutating: Arc::new(AtomicBool::new(false)),
+        }
+    }
+
     pub fn index(&self, index: usize) -> &T {
         match index {
             0 => &self.data,
