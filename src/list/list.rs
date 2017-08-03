@@ -371,7 +371,7 @@ impl<T: Clone> Node<T> {
 
                 let node = &get_link_node(&self.next.head);
 
-                node.clone().index(index - 1)
+                node.index(index - 1)
             }
         }
     }
