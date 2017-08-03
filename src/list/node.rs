@@ -17,7 +17,7 @@ pub fn get_unwrapped_link_node<T: Clone>(link: &Arc<UnsafeCell<Node<T>>>) -> &No
 }
 
 pub fn get_unwrapped_link_node_mut<T: Clone>(link: &Arc<UnsafeCell<Node<T>>>) -> &mut Node<T> {
-    unsafe { &mut *link.get() }
+    unsafe { &mut *(**link).get() }
 }
 
 pub fn get_link_node<T: Clone>(link: &Link<T>) -> &Node<T> {

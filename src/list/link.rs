@@ -3,6 +3,8 @@ use std::cell::UnsafeCell;
 
 use super::node::Node;
 
+type ArcUnsafeNode<T> = Arc<UnsafeCell<Node<T>>>;
+
 pub trait LinkRef<RN>
 {
     type DataType: Clone;
@@ -29,6 +31,29 @@ impl<T: Clone> LinkRef<Arc<Node<T>>> for Arc<Node<T>>
     }
 }
 
+impl<T> LinkRef<ArcUnsafeNode<T>> for ArcUnsafeNode<T>
+where T: Clone
+{
+    type DataType = T;
+
+    fn new(node: Node<T>) -> Self {
+        Arc::new(UnsafeCell::new(node))
+    }
+
+    fn get(&self) -> &Node<T> {
+        unsafe { &*(**self).get() }
+    }
+}
+
+impl<T> MutLinkRef<ArcUnsafeNode<T>> for ArcUnsafeNode<T>
+where
+    T: Clone,
+{
+    fn get_mut(&self) -> &mut Node<T> {
+        unsafe { &mut *(**self).get() }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -42,5 +67,21 @@ mod test {
         let node = node_link.get();
 
         assert_eq!(node.data, 0);
+    }
+
+    #[test]
+    fn arc_unsafe_cell() {
+        let node = Node::new("mut".to_string(), List::empty());
+        let node_link = Arc::new(UnsafeCell::new(node));
+
+        let mut_node = node_link.get_mut();
+
+        assert_eq!(mut_node.data, "mut");
+
+        mut_node.data += "ate";
+
+        let node = node_link.get();
+
+        assert_eq!(node.data, "mutate");
     }
 }
