@@ -388,6 +388,55 @@ impl<T: Clone + fmt::Debug> fmt::Debug for List<T> {
     }
 }
 
+/// ```
+/// #[macro_use] extern crate purse;
+///
+/// fn main() {
+///     use std::thread;
+///     use purse::List;
+///
+///     let list1 = purse_list![0, 1];
+///
+///     thread::spawn(move || {
+///         list1.prepend(-1);
+///         assert_eq!(list1, purse_list![-1, 0, 1]);
+///     });
+/// }
+/// ```
+unsafe impl<T> Send for List<T>
+where
+    T: Clone + Sync + Send,
+{
+}
+
+/// ```
+/// #[macro_use] extern crate purse;
+///
+/// fn main() {
+///     use std::thread;
+///     use purse::List;
+///
+///     let list1 = purse_list![0, 1];
+///     let list2 = list1.clone();
+///
+///     thread::spawn(move || {
+///         let list3 = list1.prepend(-1);
+///         assert_eq!(list3, purse_list![-1, 0, 1]);
+///     });
+///
+///     thread::spawn(move || {
+///         let list4 = list2.prepend(-2);
+///         assert_eq!(list4, purse_list![-2, 0, 1]);
+///     });
+///
+/// }
+/// ```
+unsafe impl<T> Sync for List<T>
+where
+    T: Clone + Sync + Send,
+{
+}
+
 /// Macro for convenient list creation
 ///
 /// # Example
