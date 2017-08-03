@@ -2,6 +2,7 @@
 pub mod list;
 pub mod iterator;
 mod node;
+mod link;
 
 #[test]
 #[should_panic(expected = "index out of bounds: the len is 0 but the index is 0")]
