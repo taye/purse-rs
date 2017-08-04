@@ -2,7 +2,7 @@ use std::sync::Arc;
 use std::ops::Index;
 use std::fmt;
 
-use super::node::{self, Node, Link, WeakLink};
+use super::node::{self, Node, NodeMutator, Link, WeakLink};
 
 /// A persistent singly linked list of elements.
 ///
@@ -196,16 +196,15 @@ impl<T> List<T> {
 
             let node = node::get_unwrapped_link_node_mut(link);
 
-            // if another list is modifying this link, concat immutably
-            if node.try_mutate() {
-                let mut list = self.clone();
+            match node.get_mutator() {
+                Some(_) => {
+                    let mut list = self.clone();
 
-                list.concat_mut(right);
-                node.end_mutate();
+                    list.concat_mut(right);
 
-                list
-            } else {
-                do_immut()
+                    list
+                }
+                None => do_immut(),
             }
         })
     }

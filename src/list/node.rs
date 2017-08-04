@@ -30,7 +30,11 @@ pub fn get_link_node<T>(link: &Link<T>) -> &Node<T> {
 pub struct Node<T> {
     pub data: T,
     pub next: List<T>,
-    mutating: Arc<AtomicBool>,
+    pub mutating: Arc<AtomicBool>,
+}
+
+pub struct NodeMutator<'a, T: 'a> {
+    pub node: &'a mut Node<T>,
 }
 
 impl<T> Node<T> {
@@ -72,16 +76,24 @@ impl<T> Node<T> {
         )
     }
 
-    pub fn try_mutate(&self) -> bool {
-        !self.mutating.compare_and_swap(
+    pub fn get_mutator(&mut self) -> Option<NodeMutator<T>> {
+        let already_mutating = self.mutating.compare_and_swap(
             false,
             true,
             Ordering::Relaxed,
-        )
-    }
+        );
 
-    pub fn end_mutate(&self) {
-        self.mutating.store(false, Ordering::Relaxed);
+        if already_mutating {
+            None
+        } else {
+            Some(NodeMutator { node: self })
+        }
+    }
+}
+
+impl<'a, T> Drop for NodeMutator<'a, T> {
+    fn drop(&mut self) {
+        self.node.mutating.store(false, Ordering::Relaxed);
     }
 }
 
@@ -93,5 +105,29 @@ impl<T: fmt::Debug> fmt::Debug for Node<T> {
                 write!(f, "{:?}, {:?}", self.data, get_unwrapped_link_node(&link))
             },
         )
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_get_mutator() {
+        let mut node = Node::new("ed".to_string(), List::empty());
+
+        {
+            let node_mutator = node.get_mutator().unwrap();
+
+            assert_eq!(node_mutator.node.data, "ed");
+            assert!(node_mutator.node.mutating.load(Ordering::Relaxed));
+
+            node_mutator.node.data += "it";
+
+            // node_mutator will be dropped and the node marked as no longer mutating
+        }
+
+        assert!(!node.mutating.load(Ordering::Relaxed));
+        assert_eq!(node.data, "edit");
     }
 }
